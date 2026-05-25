@@ -1,0 +1,52 @@
+═══════════════════════════════════════════════════════════════════════════════
+  ERRO: ALLOWED_HOSTS INVÁLIDO - SOLUÇÃO RÁPIDA
+═══════════════════════════════════════════════════════════════════════════════
+
+ERRO RECEBIDO:
+  "Cabeçalho HTTP_HOST inválido: 'app-ia-01-backend.onrender.com'"
+
+CAUSA:
+  Variável DJANGO_ALLOWED_HOSTS não foi configurada no Render
+
+═══════════════════════════════════════════════════════════════════════════════
+SOLUÇÃO (3 PASSOS - 2 MINUTOS)
+═══════════════════════════════════════════════════════════════════════════════
+
+PASSO 1: Abrir Painel Render
+  ✓ https://dashboard.render.com
+  ✓ Clique em seu Web Service
+  ✓ Vá para Settings → Environment
+
+PASSO 2: Adicionar Variável
+  Campo: DJANGO_ALLOWED_HOSTS
+  Valor: app-ia-01-backend.onrender.com
+
+PASSO 3: Salvar
+  ✓ Clique em Save
+  ✓ Render faz re-deploy automático
+  ✓ Aguarde ✓ Deploy succeeded
+
+═══════════════════════════════════════════════════════════════════════════════
+
+APÓS O REDEPLOY:
+
+Acesse: https://app-ia-01-backend.onrender.com
+Resultado: ✅ Funciona sem erro 502!
+
+═══════════════════════════════════════════════════════════════════════════════
+IMPORTANTE
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Use o domínio EXATO fornecido pelo Render
+   (seu domínio específico, não um template)
+
+2. Para múltiplos domínios, separe com vírgula:
+   app-ia-01-backend.onrender.com,seu-dominio.com.br
+
+3. Nunca use apenas "*" em produção (inseguro)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Documentação detalhada em: CORRECAO_ALLOWED_HOSTS.md
+
+═══════════════════════════════════════════════════════════════════════════════

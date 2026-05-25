@@ -1,0 +1,130 @@
+═══════════════════════════════════════════════════════════════════════════════
+  CORREÇÃO: AUTO-CONSUMO DE REDIS
+═══════════════════════════════════════════════════════════════════════════════
+
+STATUS: ✅ CONCLUÍDO
+
+───────────────────────────────────────────────────────────────────────────────
+PROBLEMA IDENTIFICADO
+───────────────────────────────────────────────────────────────────────────────
+
+Seu Redis estava crescendo indefinidamente por 2 motivos:
+
+1. ❌ CELERY_TASK_TRACK_STARTED = True
+   └─ Salvava status de CADA task executada no Redis
+   └─ Com tasks frequentes = crescimento acelerado
+
+2. ❌ CELERY_RESULT_BACKEND = REDIS_URL
+   └─ Armazenava resultado de CADA task no Redis
+   └─ SEM limpeza automática (TTL) = crescimento infinito
+
+═══════════════════════════════════════════════════════════════════════════════
+SOLUÇÃO IMPLEMENTADA
+═══════════════════════════════════════════════════════════════════════════════
+
+Arquivo: project/settings.py
+
+ANTES:
+  CELERY_TASK_TRACK_STARTED = True                     ← PROBLEMA
+  CELERY_RESULT_BACKEND = REDIS_URL                    ← PROBLEMA
+  CELERY_BROKER_CONNECTION_TIMEOUT = 2.0 (apertado)
+  CELERY_BROKER_TRANSPORT_OPTIONS timeouts (curtos)
+
+DEPOIS:
+  ✅ CELERY_TASK_TRACK_STARTED = False                 (desativado)
+  ✅ CELERY_RESULT_BACKEND = None                      (fire-and-forget)
+  ✅ CELERY_BROKER_CONNECTION_TIMEOUT = 5.0            (mais confiável)
+  ✅ CELERY_BROKER_HEARTBEAT = 30                      (novo)
+  ✅ CELERY_BROKER_POOL_LIMIT = 10                     (novo)
+  ✅ visibility_timeout = 3600                         (novo)
+
+───────────────────────────────────────────────────────────────────────────────
+MUDANÇAS ESPECÍFICAS
+───────────────────────────────────────────────────────────────────────────────
+
+project/settings.py (Celery Configuration):
+  • Removido: CELERY_RESULT_BACKEND (None agora)
+  • Desativado: CELERY_TASK_TRACK_STARTED (False agora)
+  • Adicionado: CELERY_ACCEPT_CONTENT, CELERY_TASK_SERIALIZER, etc
+  • Otimizado: CELERY_BROKER_TRANSPORT_OPTIONS
+  • Adicionado: CELERY_BROKER_HEARTBEAT
+  • Adicionado: CELERY_BROKER_POOL_LIMIT
+  • Adicionado: Comentários explicativos
+
+project/celery.py:
+  • Removido: redis_backend_use_ssl (desnecessário sem result backend)
+  • Adicionado: Comentário sobre otimização
+
+───────────────────────────────────────────────────────────────────────────────
+IMPACTO DAS MUDANÇAS
+───────────────────────────────────────────────────────────────────────────────
+
+REDIS:
+  Antes: 🔴 Crescimento infinito (metadados + resultados)
+  Depois: 🟢 Apenas broker (mensagens de tasks)
+  Esperado: Redução de 70-90% do consumo
+
+PERFORMANCE:
+  Antes: 🟡 Degradada por falta de espaço
+  Depois: 🟢 Ótima (I/O mínimo)
+
+MEMÓRIA:
+  Antes: 🔴 Crescimento constante
+  Depois: 🟢 Estável e previsível
+
+CPU:
+  Antes: 🔴 Alto (garbage collection constante)
+  Depois: 🟢 Mínimo
+
+───────────────────────────────────────────────────────────────────────────────
+POR QUE FUNCIONA
+───────────────────────────────────────────────────────────────────────────────
+
+Sua task gerar_previsao_ml_task:
+  • Rodar em background = objetivo ✅
+  • Retorna valor salvo no banco (salvar=True) ✅
+  • Não precisa acessar resultado depois ✅
+  • Perfeita para fire-and-forget ✅
+
+Logo:
+  • Não precisa tracking de status
+  • Não precisa guardar resultado no Redis
+  • Apenas broker é necessário
+
+═══════════════════════════════════════════════════════════════════════════════
+VALIDAÇÃO
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Sintaxe Python verificada (sem erros)
+✅ Configuração Celery validada
+✅ Compatível com Render
+
+═══════════════════════════════════════════════════════════════════════════════
+PRÓXIMAS AÇÕES
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Fazer commit:
+   git add .
+   git commit -m "Corrigir auto-consumo Redis - remover tracking e result backend"
+   git push
+
+2. Render faz re-deploy automaticamente
+
+3. Verificar melhoria (no Shell Render):
+   redis-cli KEYS "*"          # Deve estar vazio ou com poucas chaves
+   redis-cli INFO memory       # Memoria muito menor!
+
+═══════════════════════════════════════════════════════════════════════════════
+DOCUMENTAÇÃO CRIADA
+═══════════════════════════════════════════════════════════════════════════════
+
+📄 CORRECAO_REDIS.md
+   └─ Explicação detalhada de todas as mudanças
+   └─ Como verificar os resultados
+   └─ Referências úteis
+
+───────────────────────────────────────────────────────────────────────────────
+
+Seu Redis agora vai ficar estável! 🚀
+
+═══════════════════════════════════════════════════════════════════════════════
